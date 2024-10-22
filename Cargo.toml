@@ -2,5 +2,11 @@
 name = "pslib"
 version = "0.0.0"
 edition = "2021"
+authors = ["Kyle Andrews <codingithkyle@gmail.com"]
+repository = ""
+homepage = ""
+description = """
+Empty crate, used only to reserve the name during inital development.
+"""
 
 [dependencies]
