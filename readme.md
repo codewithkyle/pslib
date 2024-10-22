@@ -1,4 +1,4 @@
-> **Note**: this library is under development. Documentation, functionality, and implementation details are not final.
+> **Note:** this library is under development. Documentation, functionality, and implementation details are not final.
 
 ## Getting Started
 
@@ -16,7 +16,7 @@ pub fn main() {
                     .open(path)?;
     let mut writer = BufWriter::new(&file);
 
-    // Create a new PostScript document
+    // Create a new PostScript document (adds PostScript boilerplate)
     let doc = Document::new(writer);
 
     // Create a page: (w, h)
