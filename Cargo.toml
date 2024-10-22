@@ -8,5 +8,8 @@ homepage = "https://github.com/codewithkyle/pslib"
 description = """
 Empty crate, used only to reserve the name during inital development.
 """
+license = "MIT"
+keywords = ["eps", "ps", "PostScript"]
+categories = ["graphics", "rendering", "template-engine", "encoding"]
 
 [dependencies]
