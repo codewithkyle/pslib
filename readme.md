@@ -208,8 +208,13 @@ impl<W: Write> DocumentBuilder<W> {
 
 impl<W: Write> Document<W> {
     fn builder() -> DocumentBuilder {
+
+        // I don't know if this will work
+        // May need to make the document buffer an Option
+        // Then panic or something when calling add() when the buffer is None
         let buffer: Vec<u8> = Vec::new();
         let writer = BufWriter::new(&mut buffer);
+
         DocumentBuilder {
             doc_type: DocumentType::PS,
             buffer: writer,
