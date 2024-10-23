@@ -252,7 +252,9 @@ let doc = Document::builder().writer(writer).build();
 
 ## Procedures
 
-PostScript allows us to define procedures that it pushes onto the operand stack (see [PLRM p. 32-33](https://www.adobe.com/jp/print/postscript/pdfs/PLRM.pdf). These procedures can be repeatably executed to perform a set of operations. Utilizing procedures increases interpreter performance while also reducing the overall final file size.
+PostScript allows us to define procedures that it pushes onto the operand stack (see [PLRM page 32-33](https://www.adobe.com/jp/print/postscript/pdfs/PLRM.pdf). These procedures can be repeatably executed to perform a predefine set of operations. 
+
+Utilizing procedures increases interpreter performance while also reducing the overall final file size.
 
 TODO: figure out
 - Giving developers read access to prebuilt procedure strings
