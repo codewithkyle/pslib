@@ -1,6 +1,6 @@
 > **Note:** this library is under development. Documentation, functionality, and implementation details are not final.
 
-## Getting Started
+## Overview
 
 ```rust
 use pslib::{ Document, Page, Rect, Line }
