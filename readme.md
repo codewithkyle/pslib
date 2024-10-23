@@ -148,20 +148,40 @@ impl<W: Write> Document<W> {
         Document { doc_type: DocumentType::PS, writer }
     }
 
-    fn builder() -> DocumentBuilder {
-        let buffer: Vec<u8> = Vec::new();
-        let writer = BufWriter::new(&mut buffer);
-        DocumentBuilder {
-            doc_type: DocumentType::PS,
-            buffer: writer,
-        }
-    }
-
     fn add<T: Fabricate>(&mut self, item: &T) -> Result<()> {
         item.fabricate(&mut self.writer)
     }
 }
 
+pub fn main() {
+    let path = Path::new("output.ps");
+    let file = OpenOptions::new()
+                    .write(true)
+                    .create(true)
+                    .open(path)?;
+    let mut writer = BufWriter::new(&file);
+    let doc = Document::new(writer);
+    let page = Page::new(400, 400);
+    doc.add(&page);
+}
+```
+
+### Document Types
+
+This library supports creating both PostScript and Encapsulated PostScript. Documents will default to PostScript when using `Document::new()`
+
+```rust
+enum DocumentType {
+    PS, // PostScript
+    EPS, // Encapsulated PostScript
+}
+```
+
+### Builder
+
+When creating a `Document` you can use the builder pattern.
+
+```rust
 struct DocumentBuilder<W: Write> {
     doc_type: DocumentType,
     buffer: BufWriter<W>,
@@ -186,34 +206,20 @@ impl<W: Write> DocumentBuilder<W> {
     }
 }
 
+impl<W: Write> Document<W> {
+    fn builder() -> DocumentBuilder {
+        let buffer: Vec<u8> = Vec::new();
+        let writer = BufWriter::new(&mut buffer);
+        DocumentBuilder {
+            doc_type: DocumentType::PS,
+            buffer: writer,
+        }
+    }
+}
+
 pub fn main() {
-    let path = Path::new("output.ps");
-    let file = OpenOptions::new()
-                    .write(true)
-                    .create(true)
-                    .open(path)?;
-    let mut writer = BufWriter::new(&file);
-    let doc = Document::new(writer);
+    let doc = Document::builder().build();
 }
-```
-
-### Document Types
-
-This library supports creating both PostScript and Encapsulated PostScript. Documents will default to PostScript when using `Document::new()`
-
-```rust
-enum DocumentType {
-    PS, // PostScript
-    EPS, // Encapsulated PostScript
-}
-```
-
-### Builder
-
-When creating a `Document` you can use the builder pattern.
-
-```rust
-let doc = Document::builder().build();
 ```
 
 #### Setting the documents type
