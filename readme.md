@@ -42,7 +42,7 @@ pub fn main() {
 
     // Add page to document (flushes internal page buffer to BufWriter)
     // Anything that impls Fabricate trait can be added to the document
-    doc.add_page(&page);
+    doc.add(&page);
 
     // Appends EOF and closes BufWriter
     doc.close();
@@ -101,19 +101,20 @@ impl Serialize for Rect {
 
 ## Fabricate
 
-Anything that implements the `Fabricate` trait can be added to a `Document` struct instance. The `Fabricate` trait is used when you need to merge buffers (eg: writing a `Page` to a PostScript file).
+Anything that implements the `Fabricate` trait can be added to a `Document`. The `Fabricate` trait is used when you need to merge buffers (eg: writing a `Page` to a PostScript file).
 
 ```rust
 pub trait Fabricate {
-    fn fabricate<W: Write>(&self, writer: &mut BufWriter<W>) -> std::io::Result<()>;
+    fn fabricate<W: Write>(&self, writer: &mut BufWriter<W>) -> Result<()>;
 }
 ```
 
 ### Example
 
-Appending a `Page` buffer into a `Document` struct instances `BufWriter`.
+Appending a `Page` onto a `Document` that's using a `BufWriter<File>`.
 
 ```rust
+// example internal Document implementation
 struct Document<W: Write> {
     buffer: BufWriter<W>,
 }
@@ -127,7 +128,10 @@ impl<W: Write> Document<W> {
         item.fabricate(&mut self.writer)
     }
 }
+```
 
+```rust
+// example Fabricate implementation
 struct Page {
     width: i32,
     height: i32,
@@ -139,5 +143,17 @@ impl Fabricate for Page {
         writer.write_all(&self.buffer)?;
         Ok(())
     }
+}
+
+pub fn main() {
+    let path = Path::new("output.ps");
+    let file = OpenOptions::new()
+                    .write(true)
+                    .create(true)
+                    .open(path)?;
+    let mut writer = BufWriter::new(&file);
+    let doc = Document::new(writer);
+    let page = Page::new(400, 400);
+    doc.add(&page);
 }
 ```
