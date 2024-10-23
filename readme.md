@@ -1,4 +1,5 @@
-> **Note:** this library is under development. Documentation, functionality, and implementation details are not final.
+> [!WARNING]
+> This library is under development. Documentation, functionality, and implementation details are not final. **Do NOT use in production.**
 
 ## Overview
 
