@@ -139,16 +139,50 @@ Documents support writing to any type of buffer that implements the `Write` trai
 
 ```rust
 struct Document<W: Write> {
+    doc_type: DocumentType,
     buffer: BufWriter<W>,
 }
 
 impl<W: Write> Document<W> {
-    pub fn new(writer: BufWriter<W>) -> self {
-        Document { writer }
+    fn new(writer: BufWriter<W>) -> self {
+        Document { doc_type: DocumentType::PS, writer }
     }
 
-    pub fn add<T: Fabricate>(&mut self, item: &T) -> Result<()> {
+    fn builder() -> DocumentBuilder {
+        let buffer: Vec<u8> = Vec::new();
+        let writer = BufWriter::new(&mut buffer);
+        DocumentBuilder {
+            doc_type: DocumentType::PS,
+            buffer: writer,
+        }
+    }
+
+    fn add<T: Fabricate>(&mut self, item: &T) -> Result<()> {
         item.fabricate(&mut self.writer)
+    }
+}
+
+struct DocumentBuilder<W: Write> {
+    doc_type: DocumentType,
+    buffer: BufWriter<W>,
+}
+
+impl<W: Write> DocumentBuilder<W> {
+    fn document_type(&mut self, doc_type: DocumentType) -> self {
+        self.doc_type = doc_type;
+        self
+    }
+
+    fn writer(&mut self, writer: BufWriter<W>) -> self {
+        self.writer = writer;
+        self
+    }
+
+    fn build(self) -> Document {
+        Document {
+            doc_type: self.doc_type,
+            buffer: self.buffer,
+        }
     }
 }
 
@@ -161,4 +195,45 @@ pub fn main() {
     let mut writer = BufWriter::new(&file);
     let doc = Document::new(writer);
 }
+```
+
+### Document Types
+
+This library supports creating both PostScript and Encapsulated PostScript. Documents will default to PostScript when using `Document::new()`
+
+```rust
+enum DocumentType {
+    PS, // PostScript
+    EPS, // Encapsulated PostScript
+}
+```
+
+### Builder
+
+When creating a `Document` you can use the builder pattern.
+
+```rust
+let doc = Document::builder().build();
+```
+
+#### Setting the documents type
+
+The `document_type()` method allows you to set a specific document type.
+
+```rust
+let doc = Document::builder().document_type(DocumentType::EPS).build();
+```
+
+#### Setting the documents buffer writer
+
+When using the builder pattern the default the `BufWriter` will write to a `Vec<u8>` buffer. The `writer()` method allows you to set a specific buffer writer.
+
+```rust
+let path = Path::new("output.ps");
+let file = OpenOptions::new()
+                .write(true)
+                .create(true)
+                .open(path)?;
+let mut writer = BufWriter::new(&file);
+let doc = Document::builder().writer(writer).build();
 ```
