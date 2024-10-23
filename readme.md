@@ -49,7 +49,7 @@ pub fn main() {
 }
 ```
 
-### Serialize
+## Serialize
 
 Anything that implements the `Serialize` trait can be added to a `Page` struct instance. The `Serialize` trait is used to convert a data structure to a multi-line PostScript string.
 
@@ -59,7 +59,7 @@ pub trait Serialize {
 }
 ```
 
-#### Example
+### Example
 
 ```rust
 struct Rect {
