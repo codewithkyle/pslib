@@ -37,13 +37,64 @@ pub fn main() {
     // Set stroke size & color: (size, r, g, b)
     line.setStroke(1, 0.0, 0.0, 0.1);
 
-    // Anything that impls the Fabricate trait can be added to the page
+    // Anything that impls the Serialize trait can be added to the page
     page.add(line);
 
-    // Add page to document (flushes page buffer to BufWriter)
+    // Add page to document (flushes internal page buffer to BufWriter)
+    // Anything that impls Fabricate trait can be added to the document
     doc.add(page);
 
     // Appends EOF and closes BufWriter
     doc.close();
+}
+```
+
+### Serialize
+
+Anything that implements the `Serialize` trait can be added to a `Page` struct instance. The `Serialize` trait is used to convert a data structure to a multi-line PostScript string.
+
+```rust
+pub trait Serialize {
+    fn to_postscript_string(&self) -> String;
+}
+```
+
+#### Example
+
+```rust
+struct Rect {
+    x: i32,
+    y: i32,
+    width: i32,
+    height: i32,
+    strokeWidth: u8,
+    strokeColor: [3; f32],
+    fillColor: [3; f32],
+}
+
+impl Serialize for Rect {
+    fn to_postscript_string(&self) -> String {
+        let mut result = String::new();
+        
+        result.push_str("newpath\n");
+        
+        write!(&mut result, "{} {} moveto\n", self.x, self.y).unwrap();
+        
+        write!(&mut result, "0 {} rlineto\n", self.height).unwrap();
+        write!(&mut result, "{} 0 rlineto\n", self.width).unwrap();
+        write!(&mut result, "0 -{} rlineto\n", self.height).unwrap();
+        write!(&mut result, "-{} 0 rlineto\n", self.width).unwrap();
+        
+        // Add the closepath and stroke commands
+        result.push_str("closepath\n");
+
+        if self.strokeWidth > 0 {
+            write!(&mut result, "{} setlinewidth\n", self.strokeWidth).unwrap();
+            write!(&mut result, "{} {} {} setrgbcolor\n", self.strokeColor[0], self.strokeColor[1], self.strokeColor[2]).unwrap();
+            result.push_str("stroke\n");
+        }
+        
+        result
+    }
 }
 ```
