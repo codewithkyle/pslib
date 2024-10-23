@@ -49,7 +49,7 @@ pub fn main() {
 }
 ```
 
-## Serialize
+## Serialize Trait
 
 Anything that implements the `Serialize` trait can be added to a `Page` struct instance. The `Serialize` trait is used to convert a data structure to a multi-line PostScript string.
 
@@ -99,7 +99,7 @@ impl Serialize for Rect {
 }
 ```
 
-## Fabricate
+## Fabricate Trait
 
 Anything that implements the `Fabricate` trait can be added to a `Document`. The `Fabricate` trait is used when you need to merge buffers (eg: writing a `Page` to a PostScript file).
 
