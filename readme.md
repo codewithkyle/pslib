@@ -114,24 +114,6 @@ pub trait Fabricate {
 Appending a `Page` onto a `Document` that's using a `BufWriter<File>`.
 
 ```rust
-// example internal Document implementation
-struct Document<W: Write> {
-    buffer: BufWriter<W>,
-}
-
-impl<W: Write> Document<W> {
-    pub fn new(writer: BufWriter<W>) -> self {
-        Document { writer }
-    }
-
-    pub fn add<T: Fabricate>(&mut self, item: &T) -> Result<()> {
-        item.fabricate(&mut self.writer)
-    }
-}
-```
-
-```rust
-// example Fabricate implementation
 struct Page {
     width: i32,
     height: i32,
@@ -144,16 +126,21 @@ impl Fabricate for Page {
         Ok(())
     }
 }
+```
+## Document
 
-pub fn main() {
-    let path = Path::new("output.ps");
-    let file = OpenOptions::new()
-                    .write(true)
-                    .create(true)
-                    .open(path)?;
-    let mut writer = BufWriter::new(&file);
-    let doc = Document::new(writer);
-    let page = Page::new(400, 400);
-    doc.add(&page);
+```rust
+struct Document<W: Write> {
+    buffer: BufWriter<W>,
+}
+
+impl<W: Write> Document<W> {
+    pub fn new(writer: BufWriter<W>) -> self {
+        Document { writer }
+    }
+
+    pub fn add<T: Fabricate>(&mut self, item: &T) -> Result<()> {
+        item.fabricate(&mut self.writer)
+    }
 }
 ```
