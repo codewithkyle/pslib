@@ -111,7 +111,7 @@ pub trait Fabricate {
 
 ### Example
 
-Appending a `Page` onto a `Document` that's using a `BufWriter<File>`.
+Appending a `Page` onto a `Document`.
 
 ```rust
 struct Page {
@@ -127,7 +127,15 @@ impl Fabricate for Page {
     }
 }
 ```
+
 ## Document
+
+Documents support writing to any type of buffer that implements the `Write` trait. Common usage includes:
+
+- `File`
+- `Vec<u8>`
+- `stdout`
+- `TcpStream`
 
 ```rust
 struct Document<W: Write> {
@@ -142,5 +150,15 @@ impl<W: Write> Document<W> {
     pub fn add<T: Fabricate>(&mut self, item: &T) -> Result<()> {
         item.fabricate(&mut self.writer)
     }
+}
+
+pub fn main() {
+    let path = Path::new("output.ps");
+    let file = OpenOptions::new()
+                    .write(true)
+                    .create(true)
+                    .open(path)?;
+    let mut writer = BufWriter::new(&file);
+    let doc = Document::new(writer);
 }
 ```
