@@ -385,14 +385,6 @@ Details pending.
 
 Details pending.
 
-## Tri
-
-Details pending.
-
-## Ngon
-
-Details pending.
-
 ## Text
 
 Details pending.
