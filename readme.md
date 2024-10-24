@@ -138,6 +138,8 @@ Documents support writing to any type of buffer that implements the `Write` trai
 - `stdout`
 - `TcpStream`
 
+When using `Document::new()` the document will be initialized with the default PostScript procedures defined by this library. If you need to define custom procedures see the document builder pattern section below.
+
 ```rust
 struct Document<W: Write> {
     doc_type: DocumentType,
@@ -146,7 +148,12 @@ struct Document<W: Write> {
 
 impl<W: Write> Document<W> {
     fn new(writer: BufWriter<W>) -> self {
-        Document { doc_type: DocumentType::PS, writer }
+        let doc = Document { doc_type: DocumentType::PS, writer };
+        let registry = ProcedureRegistry::with_builtins();
+        for procedure in registry.list_procedures() {
+            doc.buffer.write_all(procedure.body.as_bytes())?;
+        }
+        doc
     }
 
     fn add<T: Fabricate>(&mut self, item: &T) -> Result<()> {
@@ -199,6 +206,12 @@ impl<W: Write> DocumentBuilder<W> {
         self
     }
 
+    fn load_procedures(&mut self, registry: ProcedureRegistry) -> self {
+        for procedure in registry.list_procedures() {
+            self.buffer.write_all(procedure.body.as_bytes())?;
+        }
+    }
+
     fn build(self) -> Document {
         Document {
             doc_type: self.doc_type,
@@ -248,6 +261,14 @@ let file = OpenOptions::new()
                 .open(path)?;
 let mut writer = BufWriter::new(&file);
 let doc = Document::builder().writer(writer).build();
+```
+
+#### Loading procedures
+
+The `load_procedures()` method allows you to initialize the document with a set of prebuilt PostScript procedures using the `ProcedureRegistry`.
+
+```rust
+let doc = Document::builder().load_procedures(ProcedureRegistry::with_builtins()).build();
 ```
 
 ## Procedures
@@ -304,6 +325,8 @@ impl ProcedureRegistry {
                 } def
             """.to_string(),
         });
+
+        // ...snip...
 
         registry
     }
