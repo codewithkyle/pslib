@@ -256,6 +256,101 @@ PostScript allows us to define procedures that it pushes onto the operand stack 
 
 Utilizing procedures increases interpreter performance while also reducing the overall final file size.
 
-TODO: figure out
-- Giving developers read access to prebuilt procedure strings
-- Allowing developers to define their own custom proceduers after creating a new `Document`
+```rust
+pub struct Procedure {
+    pub name: String,
+    pub body: String,
+}
+
+pub struct ProcedureRegistry {
+    procedures: HashMap<String, Procedure>,
+}
+
+impl ProcedureRegistry {
+    pub fn new() -> Self {
+        ProcedureRegistry {
+            procedures: HashMap::new(),
+        }
+    }
+
+    pub fn add_procedure(&mut self, procedure: Procedure) {
+        self.procedures.insert(procedure.name.clone(), procedure);
+    }
+
+    pub fn get_procedure(&self, name: &str) -> Option<&Procedure> {
+        self.procedures.get(name)
+    }
+
+    pub fn list_procedures(&self) -> Vec<&Procedure> {
+        self.procedures.values().collect()
+    }
+
+    pub fn with_builtins() -> Self {
+        let mut registry = Self::new();
+
+        registry.add_procedure(Procedure {
+            name: "rect".to_string(),
+            body: """
+                /rect {
+                    newpath
+                    4 2 roll
+                    moveto
+                    2 copy
+                    0 exch rlineto
+                    0 rlineto
+                    0 exch neg rlineto
+                    neg 0 rlineto
+                    closepath
+                } def
+            """.to_string(),
+        });
+
+        registry
+    }
+}
+```
+
+### Builtin Procedures
+
+```rust
+let registry = ProcedureRegistry::with_builtins();
+let proc_rect = registry.get_procedure("rect").unwrap();
+println!("{}", proc_rect);
+```
+
+```postscript
+/rect {
+    % initial stack: 300 300 100 100
+    newpath
+    4 2 roll % stack: 100 100 300 300
+    moveto % stack: 100 100
+    2 copy % stack: 100 100 100 100
+    0 % stack: 100 100 100 100 0
+    exch  % stack: 100 100 100 0 100
+    rlineto % stack: 100 100 100
+    0 % stack: 100 100 100 0
+    rlineto % stack: 100 100
+    0 % stack: 100 100 0
+    exch % stack: 100 0 100
+    neg % stack: 100 0 -100
+    rlineto % stack: 100
+    neg % stack: -100
+    0 % stack: -100 0
+    rlineto
+    closepath
+} def
+```
+
+### Adding Custom Procedures
+
+```rust
+let registry = ProcedureRegistry::new();
+registry.add_procedure(Procedure {
+    name: "custom_shape".to_string(),
+    body: "
+        /custom_shape {
+            % Custom PostScript code
+        } def
+    ".to_string(),
+});
+```
