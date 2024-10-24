@@ -377,3 +377,30 @@ registry.add_procedure(Procedure {
     ".to_string(),
 });
 ```
+## Line
+
+Details pending.
+
+## Rect
+
+Details pending.
+
+## Tri
+
+Details pending.
+
+## Ngon
+
+Details pending.
+
+## Text
+
+Details pending.
+
+## Custom Fonts
+
+Details pending.
+
+## Image
+
+Details pending.
