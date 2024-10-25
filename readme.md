@@ -379,15 +379,61 @@ registry.add_procedure(Procedure {
 ```
 ## Line
 
-Details pending.
+```rust
+struct Line {
+    x: i32,
+    y: i32,
+    length: i32,
+    strokeWidth: u8,
+    strokeColor: [3; f32],
+    fillColor: [3; f32],
+    rotate: f32,
+    scale: [2; i32],
+}
+```
 
 ## Rect
 
-Details pending.
+```rust
+struct Rect {
+    x: i32,
+    y: i32,
+    width: i32,
+    height: i32,
+    strokeWidth: u8,
+    strokeColor: [3; f32],
+    fillColor: [3; f32],
+    rotate: f32,
+    scale: [2; i32],
+}
+```
 
 ## Text
 
-Details pending.
+TODO:
+
+- Alignment
+    - Vertical
+    - Horizontal
+- Fit
+    - Contain
+    - Stretch
+    - Crop
+
+```rust
+struct Text {
+    x: i32,
+    y: i32,
+    width: i32,
+    height: i32,
+    strokeWidth: u8,
+    strokeColor: [3; f32],
+    fillColor: [3; f32],
+    text: String,
+    rotate: f32,
+    scale: [2; i32],
+}
+```
 
 ## Custom Fonts
 
