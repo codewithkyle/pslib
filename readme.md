@@ -314,13 +314,11 @@ impl ProcedureRegistry {
             body: """
                 /rect {
                     newpath
-                    4 2 roll
                     moveto
-                    2 copy
-                    0 exch rlineto
-                    0 rlineto
-                    0 exch neg rlineto
-                    neg 0 rlineto
+                    rlineto
+                    rlineto
+                    rlineto
+                    rlineto
                     closepath
                 } def
             """.to_string(),
@@ -342,23 +340,13 @@ println!("{}", proc_rect);
 ```
 
 ```postscript
+% ex: -100 0 0 -100 100 0 0 100 300 300 rect
 /rect {
-    % initial stack: 300 300 100 100
     newpath
-    4 2 roll % stack: 100 100 300 300
-    moveto % stack: 100 100
-    2 copy % stack: 100 100 100 100
-    0 % stack: 100 100 100 100 0
-    exch  % stack: 100 100 100 0 100
-    rlineto % stack: 100 100 100
-    0 % stack: 100 100 100 0
-    rlineto % stack: 100 100
-    0 % stack: 100 100 0
-    exch % stack: 100 0 100
-    neg % stack: 100 0 -100
-    rlineto % stack: 100
-    neg % stack: -100
-    0 % stack: -100 0
+    moveto
+    rlineto
+    rlineto
+    rlineto
     rlineto
     closepath
 } def
