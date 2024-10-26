@@ -18,7 +18,8 @@ impl Page {
     }
 
     pub fn add<T: Serialize>(&mut self, item: &T) -> Result<(), Error> {
-        self.buffer.write_all(item.to_postscript_string().as_bytes())?;
+        self.buffer
+            .write_all(item.to_postscript_string().as_bytes())?;
         Ok(())
     }
 }

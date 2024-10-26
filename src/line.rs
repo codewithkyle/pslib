@@ -1,11 +1,5 @@
-use crate::{ColorMode, Serialize};
+use crate::{ColorMode, Serialize, TransformLineOrigin};
 use std::fmt::Write;
-
-pub enum TransformLineOrigin {
-    Left,
-    Center, // default
-    Right,
-}
 
 pub struct Line {
     x: f32,
@@ -29,7 +23,7 @@ impl Line {
             length: length.max(0.0),
             stroke_width: 1.0,
             stroke_color_rgb: [0.0, 0.0, 0.0],
-            stroke_color_cmyk: [0.0,0.0,0.0,0.0],
+            stroke_color_cmyk: [0.0, 0.0, 0.0, 0.0],
             rotate: 0.0,
             scale: [1.0, 1.0],
             do_scale: false,
@@ -94,20 +88,21 @@ impl Serialize for Line {
         write!(&mut result, "{} {} translate\n", origin.0, origin.1).unwrap();
 
         if self.rotate > 0.0 && self.rotate < 360.0 {
-            write!(&mut result, "-{} rotate\n", self.rotate).unwrap();
+            write!(&mut result, "{} rotate\n", self.rotate).unwrap();
         }
 
         if self.do_scale {
             write!(&mut result, "{} {} scale\n", self.scale[0], self.scale[1]).unwrap();
         }
 
+        write!(&mut result, "-{} -{} translate\n", origin.0, origin.1).unwrap();
+
         write!(
             &mut result,
-            "{} {} {} {} line\n",
-            self.x + self.length,
-            self.y,
+            "{} 0 {} {} line\n",
+            self.length,
             self.x,
-            self.y
+            self.y,
         )
         .unwrap();
 

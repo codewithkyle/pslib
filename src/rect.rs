@@ -121,6 +121,8 @@ impl Serialize for Rect {
             write!(&mut result, "{} {} scale\n", self.scale[0], self.scale[1]).unwrap();
         }
 
+        write!(&mut result, "-{} -{} translate\n", origin.0, origin.1).unwrap();
+
         write!(
             &mut result,
             "-{} 0 0 -{} {} 0 0 {} {} {} rect\n",

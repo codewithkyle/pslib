@@ -35,6 +35,12 @@ pub enum TransformOrigin {
     BottomRight,
 }
 
+pub enum TransformLineOrigin {
+    Left,
+    Center, // default
+    Right,
+}
+
 pub enum ColorMode {
     CMYK,
     RGB,
@@ -51,20 +57,21 @@ impl<W: Write> Document<W> {
             doc_type: DocumentType::PS,
             buffer: writer,
         };
-        doc.buffer.write_all(
-            format!(
-                r#"
-                        %!PS-Adobe-3.0
-                        %%Creator: pslib {}
-                        %%CreationDate: {}
-                        %%Pages: (atend)
-                        %%EndComments
-                    "#,
-                env!("CARGO_PKG_VERSION"),
-                Utc::now().to_rfc3339()
+        doc.buffer
+            .write_all(
+                format!(
+                    r#"%!PS-Adobe-3.0
+%%Creator: pslib {}
+%%CreationDate: {}
+%%Pages: (atend)
+%%EndComments
+"#,
+                    env!("CARGO_PKG_VERSION"),
+                    Utc::now().to_rfc3339()
+                )
+                .as_bytes(),
             )
-            .as_bytes(),
-        ).unwrap();
+            .unwrap();
         let registry = ProcedureRegistry::with_builtins();
         for procedure in registry.list_procedures() {
             doc.buffer.write_all(procedure.body.as_bytes()).unwrap();
@@ -74,7 +81,13 @@ impl<W: Write> Document<W> {
 
     pub fn add<T: Fabricate>(&mut self, item: &T) -> Result<(), Error> {
         item.fabricate(&mut self.buffer)
-    } 
+    }
+
+    pub fn close(mut self) -> Result<(), Error> {
+        self.buffer.write_all("%%EOF".as_bytes())?;
+        self.buffer.flush()?;
+        Ok(())
+    }
 }
 
 pub struct DocumentBuilder<W: Write> {
@@ -138,39 +151,41 @@ impl<W: Write> DocumentBuilder<W> {
         };
         match doc.doc_type {
             DocumentType::PS => {
-                doc.buffer.write_all(
-                    format!(
-                        r#"
-                        %!PS-Adobe-3.0
-                        %%Creator: pslib {}
-                        %%CreationDate: {}
-                        %%Pages: (atend)
-                        %%EndComments
-                    "#,
-                        env!("CARGO_PKG_VERSION"),
-                        Utc::now().to_rfc3339()
+                doc.buffer
+                    .write_all(
+                        format!(
+                            r#"%!PS-Adobe-3.0
+%%Creator: pslib {}
+%%CreationDate: {}
+%%Pages: (atend)
+%%EndComments
+"#,
+                            env!("CARGO_PKG_VERSION"),
+                            Utc::now().to_rfc3339()
+                        )
+                        .as_bytes(),
                     )
-                    .as_bytes(),
-                ).unwrap();
+                    .unwrap();
             }
             DocumentType::EPS => {
-                doc.buffer.write_all(
-                    format!(
-                        r#"
-                        %!PS-Adobe-3.0 EPSF-3.0
-                        %%BoundingBox: 0 0 {} {}
-                        %%Creator: pslib {}
-                        %%CreationDate: {}
-                        %%Pages: 1
-                        %%EndComments
-                    "#,
-                        self.width,
-                        self.height,
-                        env!("CARGO_PKG_VERSION"),
-                        Utc::now().to_rfc3339()
+                doc.buffer
+                    .write_all(
+                        format!(
+                            r#"%!PS-Adobe-3.0 EPSF-3.0
+%%BoundingBox: 0 0 {} {}
+%%Creator: pslib {}
+%%CreationDate: {}
+%%Pages: 1
+%%EndComments
+"#,
+                            self.width,
+                            self.height,
+                            env!("CARGO_PKG_VERSION"),
+                            Utc::now().to_rfc3339()
+                        )
+                        .as_bytes(),
                     )
-                    .as_bytes(),
-                ).unwrap();
+                    .unwrap();
             }
         }
         self.has_built = true;
@@ -211,30 +226,28 @@ impl ProcedureRegistry {
 
         registry.add_procedure(Procedure {
             name: "rect".to_string(),
-            body: r#"
-                /rect {
-                    newpath
-                    moveto
-                    rlineto
-                    rlineto
-                    rlineto
-                    rlineto
-                    closepath
-                } def
-            "#
+            body: r#"/rect {
+    newpath
+    moveto
+    rlineto
+    rlineto
+    rlineto
+    rlineto
+    closepath
+} def
+"#
             .to_string(),
         });
 
         registry.add_procedure(Procedure {
             name: "line".to_string(),
-            body: r#"
-                /line {
-                    newpath
-                    moveto
-                    rlineto
-                    closepath
-                } def
-            "#
+            body: r#"/line {
+    newpath
+    moveto
+    rlineto
+    closepath
+} def
+"#
             .to_string(),
         });
 
