@@ -105,6 +105,10 @@ impl Serialize for Rect {
     fn to_postscript_string(&self) -> String {
         let mut result = String::new();
 
+        if !self.do_fill && self.stroke_width == 0.0 {
+            return result;
+        }
+
         if self.do_rotate || self.do_scale {
             result.push_str("gsave\n");
             let origin = match self.transform_origin {
