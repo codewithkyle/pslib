@@ -35,6 +35,11 @@ pub enum TransformOrigin {
     BottomRight,
 }
 
+pub enum ColorMode {
+    CMYK,
+    RGB,
+}
+
 pub struct Document<W: Write> {
     doc_type: DocumentType,
     buffer: BufWriter<W>,
