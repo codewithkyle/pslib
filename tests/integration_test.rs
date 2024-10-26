@@ -9,7 +9,7 @@ use std::{
 };
 
 #[test]
-fn test1() -> Result<(), Error> {
+fn test_ps_file() -> Result<(), Error> {
     let path = Path::new("tests/output/test1.ps");
     if path.exists() {
         let _ = fs::remove_file(path);
@@ -50,7 +50,7 @@ fn test1() -> Result<(), Error> {
 }
 
 #[test]
-fn test2() -> Result<(), Error> {
+fn test_eps_file() -> Result<(), Error> {
     let path = Path::new("tests/output/test2.eps");
     if path.exists() {
         let _ = fs::remove_file(path);
