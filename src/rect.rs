@@ -2,11 +2,11 @@ use crate::{Serialize, TransformOrigin};
 use std::fmt::Write;
 
 pub struct Rect {
-    x: i32,
-    y: i32,
-    width: i32,
-    height: i32,
-    stroke_width: u8,
+    x: f32,
+    y: f32,
+    width: f32,
+    height: f32,
+    stroke_width: f32,
     stroke_color: [f32; 3],
     fill_color: [f32; 3],
     do_fill: bool,
@@ -17,13 +17,13 @@ pub struct Rect {
 }
 
 impl Rect {
-    pub fn new(x: i32, y: i32, width: i32, height: i32) -> Self {
+    pub fn new(x: f32, y: f32, width: f32, height: f32) -> Self {
         Rect {
-            x: x.max(0),
-            y: y.max(0),
-            width: width.max(0),
-            height: height.max(0),
-            stroke_width: 0,
+            x: x.max(0.0),
+            y: y.max(0.0),
+            width: width.max(0.0),
+            height: height.max(0.0),
+            stroke_width: 0.0,
             stroke_color: [0.0, 0.0, 0.0],
             fill_color: [0.0, 0.0, 0.0],
             do_fill: false,
@@ -34,7 +34,7 @@ impl Rect {
         }
     }
 
-    pub fn set_fill(mut self, r: f32, g: f32, b: f32) -> Self {
+    pub fn fill(mut self, r: f32, g: f32, b: f32) -> Self {
         self.fill_color[0] = r.clamp(0.0, 1.0);
         self.fill_color[1] = g.clamp(0.0, 1.0);
         self.fill_color[2] = b.clamp(0.0, 1.0);
@@ -42,15 +42,15 @@ impl Rect {
         self
     }
 
-    pub fn set_stroke(mut self, width: u8, r: f32, g: f32, b: f32) -> Self {
-        self.stroke_width = width.max(0);
+    pub fn stroke(mut self, width: f32, r: f32, g: f32, b: f32) -> Self {
+        self.stroke_width = width.max(0.0);
         self.stroke_color[0] = r.clamp(0.0, 1.0);
         self.stroke_color[1] = g.clamp(0.0, 1.0);
         self.stroke_color[2] = b.clamp(0.0, 1.0);
         self
     }
 
-    pub fn set_scale(mut self, x: f32, y: f32) -> Self {
+    pub fn scale(mut self, x: f32, y: f32) -> Self {
         self.scale[0] = x;
         self.scale[1] = y;
         self.do_scale = true;
@@ -59,6 +59,11 @@ impl Rect {
 
     pub fn set_orign(mut self, origin: TransformOrigin) -> Self {
         self.transform_origin = origin;
+        self
+    }
+
+    pub fn rotate(mut self, angle: f32) -> Self {
+        self.rotate = angle.clamp(0.0, 360.0);
         self
     }
 }
@@ -74,19 +79,12 @@ impl Serialize for Rect {
             TransformOrigin::TopRight => (self.x + self.width, self.y + self.height),
             TransformOrigin::BottomLeft => (self.x, self.y),
             TransformOrigin::BottomRight => (self.x + self.width, self.y),
-            TransformOrigin::Center => (self.x + (self.width / 2), self.y + (self.height / 2)),
+            TransformOrigin::Center => (self.x + (self.width / 2.0), self.y + (self.height / 2.0)),
         };
         write!(&mut result, "{} {} translate\n", origin.0, origin.1).unwrap();
 
-        if self.rotate > 0.0 {
-            write!(
-                &mut result,
-                "{} {} transform\n",
-                self.x + (self.width / 2),
-                self.y + (self.height / 2)
-            )
-            .unwrap();
-            write!(&mut result, "{} rotate\n", self.rotate).unwrap();
+        if self.rotate > 0.0 && self.rotate < 360.0 {
+            write!(&mut result, "-{} rotate\n", self.rotate).unwrap();
         }
 
         if self.do_scale {
@@ -113,7 +111,7 @@ impl Serialize for Rect {
             result.push_str("grestore\n");
         }
 
-        if self.stroke_width > 0 {
+        if self.stroke_width > 0.0 {
             write!(&mut result, "{} setlinewidth\n", self.stroke_width).unwrap();
             write!(
                 &mut result,
