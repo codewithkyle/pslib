@@ -5,6 +5,7 @@ use std::{
 };
 
 mod rect;
+use chrono::Utc;
 pub use rect::Rect;
 
 mod page;
@@ -42,6 +43,20 @@ impl<W: Write> Document<W> {
             doc_type: DocumentType::PS,
             buffer: writer,
         };
+        doc.buffer.write_all(
+            format!(
+                r#"
+                        %!PS-Adobe-3.0
+                        %%Creator: pslib {}
+                        %%CreationDate: {}
+                        %%Pages: (atend)
+                        %%EndComments
+                    "#,
+                env!("CARGO_PKG_VERSION"),
+                Utc::now().to_rfc3339()
+            )
+            .as_bytes(),
+        ).unwrap();
         let registry = ProcedureRegistry::with_builtins();
         for procedure in registry.list_procedures() {
             doc.buffer.write_all(procedure.body.as_bytes()).unwrap();
@@ -51,12 +66,15 @@ impl<W: Write> Document<W> {
 
     pub fn add<T: Fabricate>(&mut self, item: &T) -> Result<(), Error> {
         item.fabricate(&mut self.buffer)
-    }
+    } 
 }
 
 pub struct DocumentBuilder<W: Write> {
     doc_type: DocumentType,
     buffer: Option<BufWriter<W>>,
+    width: i32,
+    height: i32,
+    has_built: bool,
 }
 
 impl<W: Write> DocumentBuilder<W> {
@@ -64,7 +82,16 @@ impl<W: Write> DocumentBuilder<W> {
         DocumentBuilder {
             doc_type: DocumentType::PS,
             buffer: None,
+            width: 0,
+            height: 0,
+            has_built: false,
         }
+    }
+
+    pub fn bounding_box(mut self, width: i32, height: i32) -> Self {
+        self.width = width.max(1);
+        self.height = height.max(1);
+        self
     }
 
     pub fn document_type(mut self, doc_type: DocumentType) -> Self {
@@ -78,6 +105,9 @@ impl<W: Write> DocumentBuilder<W> {
     }
 
     pub fn load_procedures(mut self, registry: ProcedureRegistry) -> Self {
+        if !self.has_built {
+            panic!("Must call build before calling load_procedures.");
+        }
         for procedure in registry.list_procedures() {
             self.buffer
                 .as_mut()
@@ -90,14 +120,53 @@ impl<W: Write> DocumentBuilder<W> {
         self
     }
 
-    pub fn build(self) -> Document<W> {
-        Document {
+    pub fn build(mut self) -> Document<W> {
+        let mut doc = Document {
             doc_type: self.doc_type,
             buffer: Option::expect(
                 self.buffer,
                 "Write buffer must be set before calling build.",
             ),
+        };
+        match doc.doc_type {
+            DocumentType::PS => {
+                doc.buffer.write_all(
+                    format!(
+                        r#"
+                        %!PS-Adobe-3.0
+                        %%Creator: pslib {}
+                        %%CreationDate: {}
+                        %%Pages: (atend)
+                        %%EndComments
+                    "#,
+                        env!("CARGO_PKG_VERSION"),
+                        Utc::now().to_rfc3339()
+                    )
+                    .as_bytes(),
+                ).unwrap();
+            }
+            DocumentType::EPS => {
+                doc.buffer.write_all(
+                    format!(
+                        r#"
+                        %!PS-Adobe-3.0 EPSF-3.0
+                        %%BoundingBox: 0 0 {} {}
+                        %%Creator: pslib {}
+                        %%CreationDate: {}
+                        %%Pages: 1
+                        %%EndComments
+                    "#,
+                        self.width,
+                        self.height,
+                        env!("CARGO_PKG_VERSION"),
+                        Utc::now().to_rfc3339()
+                    )
+                    .as_bytes(),
+                ).unwrap();
+            }
         }
+        self.has_built = true;
+        doc
     }
 }
 
@@ -151,4 +220,3 @@ impl ProcedureRegistry {
         registry
     }
 }
-
