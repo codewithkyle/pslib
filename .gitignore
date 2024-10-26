@@ -1,4 +1,4 @@
 /target
-/test/output/*.ps
-/test/output/*.eps
-!/test/output/know_good/*
+/tests/output/*.ps
+/tests/output/*.eps
+!/tests/output/know_good/*
