@@ -19,6 +19,14 @@ pub enum DocumentType {
     EPS, // Encapsulated PostScript
 }
 
+pub enum TransformOrigin {
+    Center, // Default
+    BottomLeft,
+    TopLeft,
+    TopRight,
+    BottomRight,
+}
+
 pub struct Document<W: Write> {
     doc_type: DocumentType,
     buffer: BufWriter<W>,

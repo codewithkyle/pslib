@@ -1,4 +1,4 @@
-use crate::Serialize;
+use crate::{Serialize, TransformOrigin};
 use std::fmt::Write;
 
 pub struct Rect {
@@ -13,6 +13,7 @@ pub struct Rect {
     rotate: f32,
     scale: [f32; 2],
     do_scale: bool,
+    transform_origin: TransformOrigin,
 }
 
 impl Rect {
@@ -29,6 +30,7 @@ impl Rect {
             rotate: 0.0,
             scale: [1.0, 1.0],
             do_scale: false,
+            transform_origin: TransformOrigin::Center,
         }
     }
 
@@ -54,20 +56,27 @@ impl Rect {
         self.do_scale = true;
         self
     }
+
+    pub fn set_orign(mut self, origin: TransformOrigin) -> Self {
+        self.transform_origin = origin;
+        self
+    }
 }
 
 impl Serialize for Rect {
     fn to_postscript_string(&self) -> String {
         let mut result = String::new();
 
-        write!(
-            &mut result,
-            "-{} 0 0 -{} {} 0 0 {} {} {} rect\n",
-            self.width, self.height, self.width, self.height, self.x, self.y
-        )
-        .unwrap();
-
         result.push_str("gsave\n");
+
+        let origin = match self.transform_origin {
+            TransformOrigin::TopLeft => (self.x, self.y + self.height),
+            TransformOrigin::TopRight => (self.x + self.width, self.y + self.height),
+            TransformOrigin::BottomLeft => (self.x, self.y),
+            TransformOrigin::BottomRight => (self.x + self.width, self.y),
+            TransformOrigin::Center => (self.x + (self.width / 2), self.y + (self.height / 2)),
+        };
+        write!(&mut result, "{} {} translate\n", origin.0, origin.1).unwrap();
 
         if self.rotate > 0.0 {
             write!(
@@ -83,6 +92,13 @@ impl Serialize for Rect {
         if self.do_scale {
             write!(&mut result, "{} {} scale\n", self.scale[0], self.scale[1]).unwrap();
         }
+
+        write!(
+            &mut result,
+            "-{} 0 0 -{} {} 0 0 {} {} {} rect\n",
+            self.width, self.height, self.width, self.height, self.x, self.y
+        )
+        .unwrap();
 
         if self.do_fill {
             write!(&mut result, "{} setlinewidth\n", self.stroke_width).unwrap();
