@@ -11,6 +11,9 @@ pub use rect::Rect;
 mod page;
 pub use page::Page;
 
+mod line;
+pub use line::Line;
+
 pub trait Fabricate {
     fn fabricate<W: Write>(&self, writer: &mut BufWriter<W>) -> Result<(), Error>;
 }
@@ -210,6 +213,19 @@ impl ProcedureRegistry {
                     rlineto
                     rlineto
                     rlineto
+                    rlineto
+                    closepath
+                } def
+            "#
+            .to_string(),
+        });
+
+        registry.add_procedure(Procedure {
+            name: "line".to_string(),
+            body: r#"
+                /line {
+                    newpath
+                    moveto
                     rlineto
                     closepath
                 } def
