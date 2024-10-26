@@ -1,6 +1,6 @@
 use std::io::{BufWriter, Error, Write};
 
-use crate::{Fabricate, Serialize};
+use crate::{DocumentType, Fabricate, Serialize};
 
 pub struct Page {
     width: i32,
@@ -25,16 +25,27 @@ impl Page {
 }
 
 impl Fabricate for Page {
-    fn fabricate<W: Write>(&self, writer: &mut BufWriter<W>) -> Result<(), Error> {
-        write!(
-            writer,
-            r#"%%PageBoundingBox: 0 0 {} {}
+    fn fabricate<W: Write>(
+        &self,
+        doc_type: &DocumentType,
+        writer: &mut BufWriter<W>,
+    ) -> Result<(), Error> {
+        match doc_type {
+            DocumentType::PS => {
+                write!(
+                    writer,
+                    r#"%%PageBoundingBox: 0 0 {} {}
 << /PageSize [{} {}] >> setpagedevice
 "#,
-            self.width, self.height, self.width, self.height
-        )?;
-        writer.write_all(&self.buffer)?;
-        writer.write_all("showpage\n".as_bytes())?;
+                    self.width, self.height, self.width, self.height
+                )?;
+                writer.write_all(&self.buffer)?;
+                writer.write_all("showpage\n".as_bytes())?;
+            }
+            _ => {
+                writer.write_all(&self.buffer)?;
+            }
+        }
         Ok(())
     }
 }

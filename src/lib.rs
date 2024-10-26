@@ -15,7 +15,7 @@ mod line;
 pub use line::Line;
 
 pub trait Fabricate {
-    fn fabricate<W: Write>(&self, writer: &mut BufWriter<W>) -> Result<(), Error>;
+    fn fabricate<W: Write>(&self, doc_type: &DocumentType, writer: &mut BufWriter<W>) -> Result<(), Error>;
 }
 
 pub trait Serialize {
@@ -82,9 +82,16 @@ impl<W: Write> Document<W> {
     }
 
     pub fn add<T: Fabricate>(&mut self, item: &T) -> Result<(), Error> {
-        self.page_count += 1;
-        self.buffer.write_all(format!("%%Page: {} {}\n", self.page_count, self.page_count).as_bytes())?;
-        item.fabricate(&mut self.buffer)
+        match self.doc_type {
+            DocumentType::PS => {
+                self.page_count += 1;
+                self.buffer.write_all(
+                    format!("%%Page: {} {}\n", self.page_count, self.page_count).as_bytes(),
+                )?;
+            }
+            _ => {}
+        }
+        item.fabricate(&self.doc_type, &mut self.buffer)
     }
 
     pub fn close(mut self) -> Result<(), Error> {
@@ -99,7 +106,7 @@ pub struct DocumentBuilder<W: Write> {
     buffer: Option<BufWriter<W>>,
     width: i32,
     height: i32,
-    has_built: bool,
+    registry: ProcedureRegistry,
 }
 
 impl<W: Write> DocumentBuilder<W> {
@@ -109,7 +116,7 @@ impl<W: Write> DocumentBuilder<W> {
             buffer: None,
             width: 0,
             height: 0,
-            has_built: false,
+            registry: ProcedureRegistry::new(),
         }
     }
 
@@ -130,22 +137,11 @@ impl<W: Write> DocumentBuilder<W> {
     }
 
     pub fn load_procedures(mut self, registry: ProcedureRegistry) -> Self {
-        if !self.has_built {
-            panic!("Must call build before calling load_procedures.");
-        }
-        for procedure in registry.list_procedures() {
-            self.buffer
-                .as_mut()
-                .unwrap_or_else(|| {
-                    panic!("Write buffer must be set before calling load_procedures.")
-                })
-                .write_all(procedure.body.as_bytes())
-                .unwrap();
-        }
+        self.registry = registry;
         self
     }
 
-    pub fn build(mut self) -> Document<W> {
+    pub fn build(self) -> Document<W> {
         let mut doc = Document {
             doc_type: self.doc_type,
             buffer: Option::expect(
@@ -180,7 +176,6 @@ impl<W: Write> DocumentBuilder<W> {
 %%BoundingBox: 0 0 {} {}
 %%Creator: pslib {}
 %%CreationDate: {}
-%%Pages: 1
 %%EndComments
 "#,
                             self.width,
@@ -193,7 +188,9 @@ impl<W: Write> DocumentBuilder<W> {
                     .unwrap();
             }
         }
-        self.has_built = true;
+        for procedure in self.registry.list_procedures() {
+            doc.buffer.write_all(procedure.body.as_bytes()).unwrap();
+        }
         doc
     }
 }

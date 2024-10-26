@@ -1,4 +1,7 @@
-use pslib::{Document, Line, Page, Rect, TransformLineOrigin};
+use pslib::{
+    Document, DocumentBuilder, DocumentType, Line, Page, ProcedureRegistry, Rect,
+    TransformLineOrigin,
+};
 use std::{
     fs::{self, OpenOptions},
     io::{BufWriter, Error},
@@ -34,8 +37,38 @@ fn test1() -> Result<(), Error> {
         .scale(1.5, 1.0)
         .stroke_rgb(2.0, 0.0, 0.0, 0.0);
     let _ = page.add(&rect);
-
     let _ = doc.add(&page);
+
+    let mut page = Page::new(500, 300);
+    let rect = Rect::new(50.0, 100.0, 400.0, 100.0).stroke_cmyk(2.0, 0.0, 1.0, 0.0, 0.0);
+    let _ = page.add(&rect);
+    let _ = doc.add(&page);
+
+    let _ = doc.close();
+
+    Ok(())
+}
+
+#[test]
+fn test2() -> Result<(), Error> {
+    let path = Path::new("output/test2.eps");
+    if path.exists() {
+        let _ = fs::remove_file(path);
+    }
+    let file = OpenOptions::new().write(true).create(true).open(path)?;
+
+    let mut doc = DocumentBuilder::builder()
+        .document_type(DocumentType::EPS)
+        .writer(BufWriter::new(&file))
+        .load_procedures(ProcedureRegistry::with_builtins())
+        .bounding_box(500, 300)
+        .build();
+
+    let mut page = Page::new(500, 300);
+    let rect = Rect::new(50.0, 100.0, 400.0, 100.0).fill_cmyk(0.5, 1.0, 0.5, 0.0);
+    let _ = page.add(&rect);
+    let _ = doc.add(&page);
+
     let _ = doc.close();
 
     Ok(())
