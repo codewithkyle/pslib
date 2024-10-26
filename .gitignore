@@ -1,3 +1,4 @@
 /target
-/output/*
-!/output/.gitkeep
+/test/output/*.ps
+/test/output/*.eps
+!/test/output/know_good/*

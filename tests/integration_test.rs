@@ -10,7 +10,7 @@ use std::{
 
 #[test]
 fn test1() -> Result<(), Error> {
-    let path = Path::new("output/test1.ps");
+    let path = Path::new("tests/output/test1.ps");
     if path.exists() {
         let _ = fs::remove_file(path);
     }
@@ -51,7 +51,7 @@ fn test1() -> Result<(), Error> {
 
 #[test]
 fn test2() -> Result<(), Error> {
-    let path = Path::new("output/test2.eps");
+    let path = Path::new("tests/output/test2.eps");
     if path.exists() {
         let _ = fs::remove_file(path);
     }
