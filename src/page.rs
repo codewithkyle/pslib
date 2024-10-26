@@ -28,8 +28,10 @@ impl Fabricate for Page {
     fn fabricate<W: Write>(&self, writer: &mut BufWriter<W>) -> Result<(), Error> {
         write!(
             writer,
-            "<< /PageSize [{} {}] >> setpagedevice\n",
-            self.width, self.height
+            r#"%%PageBoundingBox: 0 0 {} {}
+<< /PageSize [{} {}] >> setpagedevice
+"#,
+            self.width, self.height, self.width, self.height
         )?;
         writer.write_all(&self.buffer)?;
         writer.write_all("showpage\n".as_bytes())?;

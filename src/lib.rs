@@ -49,6 +49,7 @@ pub enum ColorMode {
 pub struct Document<W: Write> {
     doc_type: DocumentType,
     buffer: BufWriter<W>,
+    page_count: u32,
 }
 
 impl<W: Write> Document<W> {
@@ -56,6 +57,7 @@ impl<W: Write> Document<W> {
         let mut doc = Document {
             doc_type: DocumentType::PS,
             buffer: writer,
+            page_count: 0,
         };
         doc.buffer
             .write_all(
@@ -80,6 +82,8 @@ impl<W: Write> Document<W> {
     }
 
     pub fn add<T: Fabricate>(&mut self, item: &T) -> Result<(), Error> {
+        self.page_count += 1;
+        self.buffer.write_all(format!("%%Page: {} {}\n", self.page_count, self.page_count).as_bytes())?;
         item.fabricate(&mut self.buffer)
     }
 
@@ -148,6 +152,7 @@ impl<W: Write> DocumentBuilder<W> {
                 self.buffer,
                 "Write buffer must be set before calling build.",
             ),
+            page_count: 0,
         };
         match doc.doc_type {
             DocumentType::PS => {

@@ -15,6 +15,7 @@ pub struct Rect {
     rotate: f32,
     scale: [f32; 2],
     do_scale: bool,
+    do_rotate: bool,
     transform_origin: TransformOrigin,
     fill_color_mode: ColorMode,
     stroke_color_mode: ColorMode,
@@ -35,6 +36,7 @@ impl Rect {
             stroke_color_cmyk: [0.0, 0.0, 0.0, 0.0],
             fill_color_cmyk: [0.0, 0.0, 0.0, 0.0],
             do_fill: false,
+            do_rotate: false,
             rotate: 0.0,
             scale: [1.0, 1.0],
             do_scale: false,
@@ -93,7 +95,8 @@ impl Rect {
     }
 
     pub fn rotate(mut self, angle: f32) -> Self {
-        self.rotate = angle.clamp(0.0, 360.0);
+        self.rotate = angle.clamp(-360.0, 360.0);
+        self.do_rotate = true;
         self
     }
 }
@@ -102,26 +105,29 @@ impl Serialize for Rect {
     fn to_postscript_string(&self) -> String {
         let mut result = String::new();
 
-        result.push_str("gsave\n");
+        if self.do_rotate || self.do_scale {
+            result.push_str("gsave\n");
+            let origin = match self.transform_origin {
+                TransformOrigin::TopLeft => (self.x, self.y + self.height),
+                TransformOrigin::TopRight => (self.x + self.width, self.y + self.height),
+                TransformOrigin::BottomLeft => (self.x, self.y),
+                TransformOrigin::BottomRight => (self.x + self.width, self.y),
+                TransformOrigin::Center => {
+                    (self.x + (self.width / 2.0), self.y + (self.height / 2.0))
+                }
+            };
+            write!(&mut result, "{} {} translate\n", origin.0, origin.1).unwrap();
 
-        let origin = match self.transform_origin {
-            TransformOrigin::TopLeft => (self.x, self.y + self.height),
-            TransformOrigin::TopRight => (self.x + self.width, self.y + self.height),
-            TransformOrigin::BottomLeft => (self.x, self.y),
-            TransformOrigin::BottomRight => (self.x + self.width, self.y),
-            TransformOrigin::Center => (self.x + (self.width / 2.0), self.y + (self.height / 2.0)),
-        };
-        write!(&mut result, "{} {} translate\n", origin.0, origin.1).unwrap();
+            if self.do_rotate {
+                write!(&mut result, "{} rotate\n", self.rotate).unwrap();
+            }
 
-        if self.rotate > 0.0 && self.rotate < 360.0 {
-            write!(&mut result, "-{} rotate\n", self.rotate).unwrap();
+            if self.do_scale {
+                write!(&mut result, "{} {} scale\n", self.scale[0], self.scale[1]).unwrap();
+            }
+
+            write!(&mut result, "-{} -{} translate\n", origin.0, origin.1).unwrap();
         }
-
-        if self.do_scale {
-            write!(&mut result, "{} {} scale\n", self.scale[0], self.scale[1]).unwrap();
-        }
-
-        write!(&mut result, "-{} -{} translate\n", origin.0, origin.1).unwrap();
 
         write!(
             &mut result,
@@ -131,6 +137,7 @@ impl Serialize for Rect {
         .unwrap();
 
         if self.do_fill {
+            result.push_str("gsave\n");
             match self.fill_color_mode {
                 ColorMode::RGB => {
                     write!(
@@ -152,12 +159,12 @@ impl Serialize for Rect {
                     .unwrap();
                 }
             }
-            result.push_str("gsave\n");
             result.push_str("fill\n");
             result.push_str("grestore\n");
         }
 
         if self.stroke_width > 0.0 {
+            result.push_str("gsave\n");
             write!(&mut result, "{} setlinewidth\n", self.stroke_width).unwrap();
             match self.stroke_color_mode {
                 ColorMode::RGB => {
@@ -182,12 +189,13 @@ impl Serialize for Rect {
                     .unwrap();
                 }
             }
-            result.push_str("gsave\n");
             result.push_str("stroke\n");
             result.push_str("grestore\n");
         }
 
-        result.push_str("grestore\n");
+        if self.do_rotate || self.do_scale {
+            result.push_str("grestore\n");
+        }
 
         result
     }
