@@ -3,8 +3,12 @@ use std::{
     collections::HashMap,
     io::{BufWriter, Error, Write},
 };
+
 mod rect;
 pub use rect::Rect;
+
+mod page;
+pub use page::Page;
 
 pub trait Fabricate {
     fn fabricate<W: Write>(&self, writer: &mut BufWriter<W>) -> Result<(), Error>;
@@ -147,3 +151,4 @@ impl ProcedureRegistry {
         registry
     }
 }
+
