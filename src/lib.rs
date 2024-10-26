@@ -3,6 +3,8 @@ use std::{
     collections::HashMap,
     io::{BufWriter, Error, Write},
 };
+mod rect;
+pub use rect::Rect;
 
 pub trait Fabricate {
     fn fabricate<W: Write>(&self, writer: &mut BufWriter<W>) -> Result<(), Error>;
