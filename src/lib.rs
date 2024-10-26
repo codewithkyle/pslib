@@ -1,4 +1,3 @@
-use core::panic;
 use std::{
     collections::HashMap,
     io::{BufWriter, Error, Write},
