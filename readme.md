@@ -24,28 +24,24 @@ pub fn main() {
     let page = Page::new(400, 400);
 
     // Create a rectangle: (x, y, w, h)
-    let rect = Rect::new(0, 0, 100, 100);
-
-    // Set fill RGB color: (r, g, b)
-    rect.setFill(1.0, 0.0, 0.0);
+    let rect = Rect::new(0, 0, 100, 100)
+                    .fill_rgb(1.0, 0.0, 0.0);
 
     // Add rectangle to page (generates PS & writes to internal page buffer)
-    page.add(rect);
+    page.add(&rect);
 
     // Create a line: (x1, y1, x2, y2)
-    let line = Line::new(0, 100, 200, 100);
-
-    // Set stroke size & color: (size, r, g, b)
-    line.setStroke(1, 0.0, 0.0, 0.1);
+    let line = Line::new(0, 100, 200, 100)
+                    .stroke_rgb(1, 0.0, 0.0, 0.1);
 
     // Anything that impls the Serialize trait can be added to the page
-    page.add(line);
+    page.add(&line);
 
     // Add page to document (flushes internal page buffer to BufWriter)
     // Anything that impls Fabricate trait can be added to the document
     doc.add(&page);
 
-    // Appends EOF and closes BufWriter
+    // Appends EOF
     doc.close();
 }
 ```
@@ -106,7 +102,7 @@ Anything that implements the `Fabricate` trait can be added to a `Document`. The
 
 ```rust
 pub trait Fabricate {
-    fn fabricate<W: Write>(&self, writer: &mut BufWriter<W>) -> Result<()>;
+    fn fabricate<W: Write>(&self, doc_type: &DocumentType, writer: &mut BufWriter<W>) -> Result<(), Error>;
 }
 ```
 
@@ -122,8 +118,24 @@ struct Page {
 }
 
 impl Fabricate for Page {
-    fn fabricate<W: Write>(&self, writer: &mut BufWriter<W>) -> Result<()> {
-        writer.write_all(&self.buffer)?;
+    fn fabricate<W: Write>(&self, doc_type: &DocumentType, writer: &mut BufWriter<W>) -> Result<(), Error> {
+        match doc_type {
+            DocumentType::PS => {
+                write!(
+                    writer,
+                    r#"
+                        %%PageBoundingBox: 0 0 {} {}
+                        << /PageSize [{} {}] >> setpagedevice
+                    "#,
+                    self.width, self.height, self.width, self.height
+                )?;
+                writer.write_all(&self.buffer)?;
+                writer.write_all("showpage\n".as_bytes())?;
+            }
+            _ => {
+                writer.write_all(&self.buffer)?;
+            }
+        }
         Ok(())
     }
 }
@@ -141,27 +153,9 @@ Documents support writing to any type of buffer that implements the `Write` trai
 When using `Document::new()` the document will be initialized with the default PostScript procedures defined by this library. If you need to define custom procedures see the document builder pattern section below.
 
 ```rust
-struct Document<W: Write> {
-    doc_type: DocumentType,
-    buffer: BufWriter<W>,
-}
+use pslib::{ Document, Page };
 
-impl<W: Write> Document<W> {
-    fn new(writer: BufWriter<W>) -> self {
-        let doc = Document { doc_type: DocumentType::PS, writer };
-        let registry = ProcedureRegistry::with_builtins();
-        for procedure in registry.list_procedures() {
-            doc.buffer.write_all(procedure.body.as_bytes())?;
-        }
-        doc
-    }
-
-    fn add<T: Fabricate>(&mut self, item: &T) -> Result<()> {
-        item.fabricate(&mut self.writer)
-    }
-}
-
-pub fn main() {
+fn main() {
     let path = Path::new("output.ps");
     let file = OpenOptions::new()
                     .write(true)
@@ -190,53 +184,9 @@ enum DocumentType {
 When creating a `Document` you can use the builder pattern.
 
 ```rust
-struct DocumentBuilder<W: Write> {
-    doc_type: DocumentType,
-    buffer: BufWriter<W>,
-}
+use pslib::DocumentBuilder;
 
-impl<W: Write> DocumentBuilder<W> {
-    fn document_type(&mut self, doc_type: DocumentType) -> self {
-        self.doc_type = doc_type;
-        self
-    }
-
-    fn writer(&mut self, writer: BufWriter<W>) -> self {
-        self.writer = writer;
-        self
-    }
-
-    fn load_procedures(&mut self, registry: ProcedureRegistry) -> self {
-        for procedure in registry.list_procedures() {
-            self.buffer.write_all(procedure.body.as_bytes())?;
-        }
-    }
-
-    fn build(self) -> Document {
-        Document {
-            doc_type: self.doc_type,
-            buffer: self.buffer,
-        }
-    }
-}
-
-impl<W: Write> Document<W> {
-    fn builder() -> DocumentBuilder {
-
-        // I don't know if this will work
-        // May need to make the document buffer an Option
-        // Then panic or something when calling add() when the buffer is None
-        let buffer: Vec<u8> = Vec::new();
-        let writer = BufWriter::new(&mut buffer);
-
-        DocumentBuilder {
-            doc_type: DocumentType::PS,
-            buffer: writer,
-        }
-    }
-}
-
-pub fn main() {
+fn main() {
     let doc = Document::builder().build();
 }
 ```
@@ -254,13 +204,21 @@ let doc = Document::builder().document_type(DocumentType::EPS).build();
 When using the builder pattern the default the `BufWriter` will write to a `Vec<u8>` buffer. The `writer()` method allows you to set a specific buffer writer.
 
 ```rust
-let path = Path::new("output.ps");
-let file = OpenOptions::new()
-                .write(true)
-                .create(true)
-                .open(path)?;
-let mut writer = BufWriter::new(&file);
-let doc = Document::builder().writer(writer).build();
+use pslib::{ DocumentBuilder, ProcedureRegistry };
+
+fn main() {
+    let path = Path::new("output.ps");
+    let file = OpenOptions::new()
+                    .write(true)
+                    .create(true)
+                    .open(path)?;
+    let mut doc = DocumentBuilder::builder()
+            .document_type(DocumentType::EPS)
+            .writer(BufWriter::new(&file))
+            .load_procedures(ProcedureRegistry::with_builtins())
+            .bounding_box(500, 300)
+            .build();
+}
 ```
 
 #### Loading procedures
@@ -268,7 +226,7 @@ let doc = Document::builder().writer(writer).build();
 The `load_procedures()` method allows you to initialize the document with a set of prebuilt PostScript procedures using the `ProcedureRegistry`.
 
 ```rust
-let doc = Document::builder().load_procedures(ProcedureRegistry::with_builtins()).build();
+let doc = DocumentBuilder::builder().load_procedures(ProcedureRegistry::with_builtins()).build();
 ```
 
 ## Procedures
@@ -276,60 +234,6 @@ let doc = Document::builder().load_procedures(ProcedureRegistry::with_builtins()
 PostScript allows us to define procedures that it pushes onto the operand stack (see [PLRM page 32-33](https://www.adobe.com/jp/print/postscript/pdfs/PLRM.pdf). These procedures can be repeatably executed to perform a predefine set of operations. 
 
 Utilizing procedures increases interpreter performance while also reducing the overall final file size.
-
-```rust
-pub struct Procedure {
-    pub name: String,
-    pub body: String,
-}
-
-pub struct ProcedureRegistry {
-    procedures: HashMap<String, Procedure>,
-}
-
-impl ProcedureRegistry {
-    pub fn new() -> Self {
-        ProcedureRegistry {
-            procedures: HashMap::new(),
-        }
-    }
-
-    pub fn add_procedure(&mut self, procedure: Procedure) {
-        self.procedures.insert(procedure.name.clone(), procedure);
-    }
-
-    pub fn get_procedure(&self, name: &str) -> Option<&Procedure> {
-        self.procedures.get(name)
-    }
-
-    pub fn list_procedures(&self) -> Vec<&Procedure> {
-        self.procedures.values().collect()
-    }
-
-    pub fn with_builtins() -> Self {
-        let mut registry = Self::new();
-
-        registry.add_procedure(Procedure {
-            name: "rect".to_string(),
-            body: """
-                /rect {
-                    newpath
-                    moveto
-                    rlineto
-                    rlineto
-                    rlineto
-                    rlineto
-                    closepath
-                } def
-            """.to_string(),
-        });
-
-        // ...snip...
-
-        registry
-    }
-}
-```
 
 ### Builtin Procedures
 
@@ -355,51 +259,71 @@ println!("{}", proc_rect);
 ### Adding Custom Procedures
 
 ```rust
-let registry = ProcedureRegistry::new();
-registry.add_procedure(Procedure {
-    name: "custom_shape".to_string(),
-    body: "
-        /custom_shape {
-            % Custom PostScript code
-        } def
-    ".to_string(),
-});
+use pslib::{ ProcedureRegistry, Procedure };
+
+fn main() {
+    let registry = ProcedureRegistry::new();
+    registry.add_procedure(Procedure {
+        name: "custom_shape".to_string(),
+        body: r#"
+            /custom_shape {
+                % Custom PostScript code
+            } def
+        "#.to_string(),
+    });
+}
 ```
 ## Line
 
 ```rust
-struct Line {
-    x: i32,
-    y: i32,
-    length: i32,
-    strokeWidth: u8,
-    strokeColor: [3; f32],
-    fillColor: [3; f32],
-    rotate: f32,
-    scale: [2; i32],
+use pslib::{ Line, TransformLineOrigin };
+
+fn main() {
+    let line = Line::new(100.0, 100.0, 100.0)
+        .rotate(45.0)
+        .set_orign(TransformLineOrigin::Left)
+        .stroke_cmyk(2.0, 1.0, 0.0, 0.0, 0.25);
 }
 ```
+
+| Method | Parameters |
+| - | - |
+| `stroke_rgb` | `(width: f32, r: f32, g: f32, b: f32)` |
+| `stroke_cmyk` | `(width: f32, c: f32, m: f32, y: f32, k: f32)` |
+| `scale` | `(x: f32, y: f32)` |
+| `set_orign` | `(origin: TransformOrigin)` |
+| `rotate` | `(angle: f32)` |
 
 ## Rect
 
 ```rust
-struct Rect {
-    x: i32,
-    y: i32,
-    width: i32,
-    height: i32,
-    strokeWidth: u8,
-    strokeColor: [3; f32],
-    fillColor: [3; f32],
-    rotate: f32,
-    scale: [2; i32],
+use pslib::Rect;
+
+fn main() {
+    let rect = Rect::new(155.0, 155.0, 100.0, 100.0)
+        .fill_rgb(1.0, 0.0, 0.0)
+        .rotate(45.0)
+        .scale(1.5, 1.0)
+        .stroke_rgb(2.0, 0.0, 0.0, 0.0);
 }
 ```
 
+| Method | Parameters |
+| - | - |
+| `fill_rgb` | `(r: f32, g: f32, b: f32)` |
+| `fill_cmyk` | `(c: f32, m: f32, y: f32, k: f32)` |
+| `stroke_rgb` | `(width: f32, r: f32, g: f32, b: f32)` |
+| `stroke_cmyk` | `(width: f32, c: f32, m: f32, y: f32, k: f32)` |
+| `scale` | `(x: f32, y: f32)` |
+| `set_orign` | `(origin: TransformOrigin)` |
+| `rotate` | `(angle: f32)` |
+
 ## Text
 
-TODO:
+> [!WARNING]
+> Text structure and implemention pending.
 
+TODO:
 - Alignment
     - Vertical
     - Horizontal
@@ -410,16 +334,18 @@ TODO:
 
 ```rust
 struct Text {
-    x: i32,
-    y: i32,
-    width: i32,
-    height: i32,
-    strokeWidth: u8,
-    strokeColor: [3; f32],
-    fillColor: [3; f32],
+    x: f32,
+    y: f32,
+    width: f32,
+    height: f32,
+    stroke_width: f32,
+    stroke_color_rgb: [f32; 3],
+    stroke_color_cmyk: [f32; 4],
+    fill_color_rgb: [f32; 3],
+    fill_color_cmyk: [f32; 4],
     text: String,
     rotate: f32,
-    scale: [2; i32],
+    scale: [f32; 2],
 }
 ```
 
