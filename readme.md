@@ -355,4 +355,100 @@ Details pending.
 
 ## Image
 
-Details pending.
+> [!WARNING]
+> Image structure and implemention pending.
+
+I'm thinking I'd like images to be automatically conveted to PostScript procedures. That way if/when we draw the same image to the document several times we don't have to binary encode the image every time.
+
+My first instinct is to create another registry like the `ProcedureRegistry` but this would force developers to register all the images they're going to use up front.
+
+Experiment needed: test to see if the code that invokes a procedure can come before the definition of the procedure.
+
+```rust
+struct Image {
+    x: f32,
+    y: f32,
+    width: f32,
+    height: f32,
+    rotate: f32,
+    scale: [f32; 2],
+    procedure_id: String,
+}
+
+impl Image {
+    pub fn new(procedure_id: String, x: f32, y: f32, width: f32, height: f32) -> Self {
+        Image {
+            x: x.max(0.0),
+            y: y.max(0.0),
+            width: width.max(0.0),
+            height: height.max(0.0),
+            rotate: 0.0,
+            scale: [0.0, 0.0],
+            procedure_id: procedure_id,
+        }
+    }
+}
+```
+
+### Image Registry
+
+```rust
+struct RawImage {
+    file_name: String,
+    file_path: Path,
+    procedure_name: String,
+}
+struct ImageRegistry {
+    images: HashMap<String, RawImage>,
+    count: u32,
+}
+
+impl ImageRegistry {
+    pub fn new() -> Self {
+        ImageRegistry {
+            images: HashMap::new(),
+            count: 0,
+        }
+    }
+
+    pub fn add(mut self, path: Path) -> Self {
+        let file_name = path.file_name().to_string_lossy();
+        self.count += 1;
+        let proc_name = format!("imager{}", self.count);
+        let image = RawImage {
+            file_name: file_name,
+            file_path: path,
+            procedure_name: proc_name,
+        };
+        self.images.add(file_name, image);
+        self
+    }
+
+    pub fn get_procedure_id(self, file_name: String) -> Option<String> {
+        let raw = self.images.get(file_name);
+        if raw.is_none() {
+            return None;
+        }
+        Some(raw.procedure_name)
+    }
+}
+```
+
+### Example
+
+```rust
+let image_path = Path::new("/some/directory/filename.txt");
+let registry = ProcedureRegistry::new();
+registry.add(image_path);
+
+let buffer: Vec<u8> = Vec::new();
+let mut writer = BufWriter::new(&buffer);
+let document = Document::new(writer);
+
+document.load_images(registry); // generates and writes image procedures to buffer
+
+let page = Page::new(100.0, 100.0);
+
+let image = Image::new(registry.get_procedure_id("filename.txt", 0.0, 0.0, 100.0, 100.0));
+page.add(&image); // writes "100 100 0 0 imager1" to buffer
+```
