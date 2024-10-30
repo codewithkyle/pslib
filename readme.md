@@ -452,3 +452,35 @@ let page = Page::new(100.0, 100.0);
 let image = Image::new(registry.get_procedure_id("filename.txt", 0.0, 0.0, 100.0, 100.0));
 page.add(&image); // writes "100 100 0 0 imager1" to buffer
 ```
+
+## Inline Images
+
+Unline the standard `Image` that invokes a stored image procedure defiend by the `ImageRegistry` inline images will write the binary encoded image directy into the `Page` every time. This will most likely be useful when a developer _knows_ they will only write the image once. It may also be useful (even recommended?) when creating EPS files.
+
+The final documentation should strongly encourage developers to use the `ImageRegistry`.
+
+```rust
+struct InlineImage {
+    x: f32,
+    y: f32,
+    width: f32,
+    height: f32,
+    rotate: f32,
+    scale: [f32; 2],
+    file_path: String,
+}
+
+impl InlineImage {
+    pub fn new(file_path: Path, x: f32, y: f32, width: f32, height: f32) -> Self {
+        InlineImage {
+            x: x.max(0.0),
+            y: y.max(0.0),
+            width: width.max(0.0),
+            height: height.max(0.0),
+            rotate: 0.0,
+            scale: [0.0, 0.0],
+            file_path: file_path,
+        }
+    }
+}
+```
