@@ -458,7 +458,7 @@ page.add(&image); // writes "100 100 0 0 imager1" to buffer
 > [!WARNING]
 > Inline image structure and implemention pending.
 
-Unline the standard `Image` that invokes a stored image procedure defiend by the `ImageRegistry` inline images will write the binary encoded image directy into the `Page` every time. This will most likely be useful when a developer _knows_ they will only write the image once. It may also be useful (even recommended?) when creating EPS files.
+Unlike the standard `Image` that invokes a stored image procedure defiend by the `ImageRegistry` inline images will write the binary encoded image directy into the `Page` every time. This will most likely be useful when a developer _knows_ they will only write the image once. It may also be useful (even recommended?) when creating EPS files.
 
 The final documentation should strongly encourage developers to use the `ImageRegistry`.
 
@@ -470,7 +470,7 @@ struct InlineImage {
     height: f32,
     rotate: f32,
     scale: [f32; 2],
-    file_path: String,
+    file_path: Path,
 }
 
 impl InlineImage {
