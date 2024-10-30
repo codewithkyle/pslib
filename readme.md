@@ -323,15 +323,6 @@ fn main() {
 > [!WARNING]
 > Text structure and implemention pending.
 
-TODO:
-- Alignment
-    - Vertical
-    - Horizontal
-- Fit
-    - Contain
-    - Stretch
-    - Crop
-
 ```rust
 struct Text {
     x: f32,
@@ -346,7 +337,46 @@ struct Text {
     text: String,
     rotate: f32,
     scale: [f32; 2],
+    horizontal_align: TextHorizontalAlignment,
+    vertical_align: TextVerticalAlignment,
+    fit: TextFit,
+    wrap: TextWrap,
 }
+
+enum TextFit {
+    Contain, // default
+    Stretch,
+    StretchHorizontal,
+    StretchVertical,
+    Crop,
+}
+
+enum TextHorizontalAlignment {
+    Left, // default
+    Center,
+    Right,
+}
+
+enum TextVerticalAlignment {
+    Top, // default
+    Center,
+    Bottom,
+}
+
+enum TextWrap {
+    Wrap,
+    Nowrap, // default
+}
+```
+
+### Example
+
+```rust
+let text = Text::new("Hello, World!", 0.0, 0.0, 100.0, 50.0)
+                    .horizontal_align(TextHorizontalAlignment::Center)
+                    .vertical_align(TextVerticalAlignment::Center)
+                    .fit(TextFit::StretchHorizontal)
+                    .wrap(TextWrap::Wrap);
 ```
 
 ## Custom Fonts
