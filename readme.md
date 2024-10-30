@@ -403,6 +403,14 @@ struct Image {
     rotate: f32,
     scale: [f32; 2],
     procedure_id: String,
+    fit: ImageFit,
+}
+
+enum ImageFit {
+    Contain, // default
+    Stretch,
+    Crop,
+    Copyonly,
 }
 
 impl Image {
@@ -415,6 +423,7 @@ impl Image {
             rotate: 0.0,
             scale: [0.0, 0.0],
             procedure_id: procedure_id,
+            fit: ImageFit::Contain,
         }
     }
 }
