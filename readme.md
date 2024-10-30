@@ -510,6 +510,7 @@ struct InlineImage {
     rotate: f32,
     scale: [f32; 2],
     file_path: Path,
+    fit: ImageFit,
 }
 
 impl InlineImage {
@@ -522,6 +523,7 @@ impl InlineImage {
             rotate: 0.0,
             scale: [0.0, 0.0],
             file_path: file_path,
+            fit: ImageFit::Contain,
         }
     }
 }
