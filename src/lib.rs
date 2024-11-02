@@ -76,6 +76,7 @@ impl<W: Write> Document<W> {
         let registry = ProcedureRegistry::with_builtins();
         for procedure in registry.list_procedures() {
             doc.buffer.write_all(procedure.body.as_bytes()).unwrap();
+            doc.buffer.write_all("\n".as_bytes()).unwrap();
         }
         doc
     }
@@ -189,6 +190,7 @@ impl<W: Write> DocumentBuilder<W> {
         }
         for procedure in self.registry.list_procedures() {
             doc.buffer.write_all(procedure.body.as_bytes()).unwrap();
+            doc.buffer.write_all("\n".as_bytes()).unwrap();
         }
         doc
     }
@@ -227,28 +229,37 @@ impl ProcedureRegistry {
 
         registry.add_procedure(Procedure {
             name: "rect".to_string(),
-            body: r#"/rect {
-    newpath
-    moveto
-    rlineto
-    rlineto
-    rlineto
-    rlineto
-    closepath
-} def
-"#
+            body: r#"/rect { newpath moveto rlineto rlineto rlineto rlineto closepath } def"#
             .to_string(),
         });
 
         registry.add_procedure(Procedure {
             name: "line".to_string(),
-            body: r#"/line {
-    newpath
-    moveto
-    rlineto
-    closepath
-} def
-"#
+            body: r#"/line { newpath moveto rlineto closepath } def"#
+            .to_string(),
+        });
+
+        registry.add_procedure(Procedure {
+            name: "fill_rgb".to_string(),
+            body: r#"/fillrgb { gsave setrgbcolor fill grestore } def"#
+            .to_string(),
+        });
+
+        registry.add_procedure(Procedure {
+            name: "fill_cmyk".to_string(),
+            body: r#"/fillcmyk { gsave setcmykcolor fill grestore } def"#
+            .to_string(),
+        });
+
+        registry.add_procedure(Procedure {
+            name: "stroke_rgb".to_string(),
+            body: r#"/strokergb { gsave setlinewidth setrgbcolor stroke grestore } def"#
+            .to_string(),
+        });
+
+        registry.add_procedure(Procedure {
+            name: "stroke_cmyk".to_string(),
+            body: r#"/strokecmyk { gsave setlinewidth setcmykcolor stroke grestore } def"#
             .to_string(),
         });
 

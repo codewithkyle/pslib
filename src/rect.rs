@@ -110,7 +110,7 @@ impl Serialize for Rect {
         }
 
         if self.do_rotate || self.do_scale {
-            result.push_str("gsave\n");
+            result.push_str("gsave ");
             let origin = match self.transform_origin {
                 TransformOrigin::TopLeft => (self.x, self.y + self.height),
                 TransformOrigin::TopRight => (self.x + self.width, self.y + self.height),
@@ -120,33 +120,32 @@ impl Serialize for Rect {
                     (self.x + (self.width / 2.0), self.y + (self.height / 2.0))
                 }
             };
-            write!(&mut result, "{} {} translate\n", origin.0, origin.1).unwrap();
+            write!(&mut result, "{} {} translate ", origin.0, origin.1).unwrap();
 
             if self.do_rotate {
-                write!(&mut result, "{} rotate\n", self.rotate).unwrap();
+                write!(&mut result, "{} rotate ", self.rotate).unwrap();
             }
 
             if self.do_scale {
-                write!(&mut result, "{} {} scale\n", self.scale[0], self.scale[1]).unwrap();
+                write!(&mut result, "{} {} scale ", self.scale[0], self.scale[1]).unwrap();
             }
 
-            write!(&mut result, "-{} -{} translate\n", origin.0, origin.1).unwrap();
+            write!(&mut result, "-{} -{} translate ", origin.0, origin.1).unwrap();
         }
 
         write!(
             &mut result,
-            "-{} 0 0 -{} {} 0 0 {} {} {} rect\n",
+            "-{} 0 0 -{} {} 0 0 {} {} {} rect ",
             self.width, self.height, self.width, self.height, self.x, self.y
         )
         .unwrap();
 
         if self.do_fill {
-            result.push_str("gsave\n");
             match self.fill_color_mode {
                 ColorMode::RGB => {
                     write!(
                         &mut result,
-                        "{} {} {} setrgbcolor\n",
+                        "{} {} {} fillrgb ",
                         self.fill_color_rgb[0], self.fill_color_rgb[1], self.fill_color_rgb[2]
                     )
                     .unwrap();
@@ -154,7 +153,7 @@ impl Serialize for Rect {
                 ColorMode::CMYK => {
                     write!(
                         &mut result,
-                        "{} {} {} {} setcmykcolor\n",
+                        "{} {} {} {} fillcmyk ",
                         self.fill_color_cmyk[0],
                         self.fill_color_cmyk[1],
                         self.fill_color_cmyk[2],
@@ -163,42 +162,38 @@ impl Serialize for Rect {
                     .unwrap();
                 }
             }
-            result.push_str("fill\n");
-            result.push_str("grestore\n");
         }
 
         if self.stroke_width > 0.0 {
-            result.push_str("gsave\n");
-            write!(&mut result, "{} setlinewidth\n", self.stroke_width).unwrap();
             match self.stroke_color_mode {
                 ColorMode::RGB => {
                     write!(
                         &mut result,
-                        "{} {} {} setrgbcolor\n",
+                        "{} {} {} {} strokergb ",
                         self.stroke_color_rgb[0],
                         self.stroke_color_rgb[1],
-                        self.stroke_color_rgb[2]
+                        self.stroke_color_rgb[2],
+                        self.stroke_width,
                     )
                     .unwrap();
                 }
                 ColorMode::CMYK => {
                     write!(
                         &mut result,
-                        "{} {} {} {} setcmykcolor\n",
+                        "{} {} {} {} {} strokecmyk ",
                         self.stroke_color_cmyk[0],
                         self.stroke_color_cmyk[1],
                         self.stroke_color_cmyk[2],
                         self.stroke_color_cmyk[3],
+                        self.stroke_width,
                     )
                     .unwrap();
                 }
             }
-            result.push_str("stroke\n");
-            result.push_str("grestore\n");
         }
 
         if self.do_rotate || self.do_scale {
-            result.push_str("grestore\n");
+            result.push_str("grestore ");
         }
 
         result
