@@ -43,4 +43,8 @@ impl ImageRegistry {
         let raw = raw.unwrap();
         Some(raw.procedure_name.clone())
     }
+
+    pub fn list_images(&self) -> Vec<&RawImage> {
+        self.images.values().collect()
+    }
 }

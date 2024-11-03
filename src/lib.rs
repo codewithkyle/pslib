@@ -5,6 +5,7 @@ use std::{
 
 mod rect;
 use chrono::Utc;
+use image_registry::ImageRegistry;
 pub use rect::Rect;
 
 mod page;
@@ -113,6 +114,13 @@ impl<W: Write> Document<W> {
         self.buffer.flush()?;
         Ok(())
     }
+
+    pub fn load_images(&mut self, registry: ImageRegistry) -> Result<(), Error> {
+        for image in registry.list_images() {
+            todo!("Generate procedures for images");
+        }
+        Ok(())
+    }
 }
 
 pub struct DocumentBuilder<W: Write> {
@@ -121,6 +129,7 @@ pub struct DocumentBuilder<W: Write> {
     width: i32,
     height: i32,
     registry: ProcedureRegistry,
+    images: ImageRegistry,
 }
 
 impl<W: Write> DocumentBuilder<W> {
@@ -131,6 +140,7 @@ impl<W: Write> DocumentBuilder<W> {
             width: 0,
             height: 0,
             registry: ProcedureRegistry::new(),
+            images: ImageRegistry::new(),
         }
     }
 
@@ -152,6 +162,11 @@ impl<W: Write> DocumentBuilder<W> {
 
     pub fn load_procedures(mut self, registry: ProcedureRegistry) -> Self {
         self.registry = registry;
+        self
+    }
+
+    pub fn load_images(mut self, registry: ImageRegistry) -> Self {
+        self.images = registry;
         self
     }
 
@@ -205,6 +220,9 @@ impl<W: Write> DocumentBuilder<W> {
         for procedure in self.registry.list_procedures() {
             doc.buffer.write_all(procedure.body.as_bytes()).unwrap();
             doc.buffer.write_all("\n".as_bytes()).unwrap();
+        }
+        for images in self.images.list_images() {
+            todo!("Generate image procedures");
         }
         doc
     }
