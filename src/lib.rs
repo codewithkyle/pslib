@@ -13,6 +13,10 @@ pub use page::Page;
 mod line;
 pub use line::Line;
 
+mod image_registry;
+
+mod image;
+
 pub trait Fabricate {
     fn fabricate<W: Write>(&self, doc_type: &DocumentType, writer: &mut BufWriter<W>) -> Result<(), Error>;
 }
