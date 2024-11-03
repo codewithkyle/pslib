@@ -17,6 +17,8 @@ mod image_registry;
 
 mod image;
 
+mod inline_image;
+
 pub trait Fabricate {
     fn fabricate<W: Write>(&self, doc_type: &DocumentType, writer: &mut BufWriter<W>) -> Result<(), Error>;
 }
@@ -47,6 +49,14 @@ pub enum TransformLineOrigin {
 pub enum ColorMode {
     CMYK,
     RGB,
+}
+
+pub enum ImageFit {
+    Contain,
+    Stretch,
+    StretchHorizontal,
+    StretchVertical,
+    Crop,
 }
 
 pub struct Document<W: Write> {
